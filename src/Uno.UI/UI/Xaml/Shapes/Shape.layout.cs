@@ -1,4 +1,4 @@
-﻿#if __IOS__ || __MACOS__ || __SKIA__
+﻿#if __IOS__ || __MACOS__ || __SKIA__ || __ANDROID__
 using System;
 using System.Linq;
 using Windows.Foundation;
@@ -20,6 +20,11 @@ using NativeSingle = System.nfloat;
 #elif __SKIA__
 using _Color = Windows.UI.Color;
 using NativePath = Windows.UI.Composition.SkiaGeometrySource2D;
+using NativeSingle = System.Double;
+
+#elif __ANDROID__
+using _Color = Android.Graphics.Color;
+using NativePath = Android.Graphics.Path;
 using NativeSingle = System.Double;
 #endif
 
@@ -541,6 +546,8 @@ namespace Windows.UI.Xaml.Shapes
 #endif
 #elif __SKIA__
 			Render(path, renderScale.x, renderScale.y, renderOrigin.x, renderOrigin.y);
+#elif __ANDROID__
+			Render(path, finalSize.Width, finalSize.Height, renderScale.x, renderScale.y);
 #endif
 
 			return size;
