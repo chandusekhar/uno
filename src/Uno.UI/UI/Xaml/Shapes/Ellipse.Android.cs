@@ -1,6 +1,7 @@
 ﻿using Windows.Foundation;
 using Android.Graphics;
 using Uno.UI;
+using Rect = Windows.Foundation.Rect;
 
 namespace Windows.UI.Xaml.Shapes
 {
@@ -12,8 +13,7 @@ namespace Windows.UI.Xaml.Shapes
 		}
 
 		/// <inheritdoc />
-		protected override Size MeasureOverride(Size availableSize)
-			=> base.MeasureRelativeShape(availableSize);
+		protected override Size MeasureOverride(Size availableSize) => base.MeasureRelativeShape(availableSize);
 
 		/// <inheritdoc />
 		protected override Size ArrangeOverride(Size finalSize)
@@ -21,19 +21,17 @@ namespace Windows.UI.Xaml.Shapes
 			var (shapeSize, renderingArea) = ArrangeRelativeShape(finalSize);
 
 			Render(renderingArea.Width > 0 && renderingArea.Height > 0
-				? GetPath(renderingArea.Size)
+				? GetPath(renderingArea)
 				: null);
 
 			return shapeSize;
 		}
 
-		private Android.Graphics.Path GetPath(Size availableSize)
+		private Android.Graphics.Path GetPath(Rect availableSize)
 		{
-			var bounds = availableSize.LogicalToPhysicalPixels();
-
 			var output = new Android.Graphics.Path();
 			output.AddOval(
-				new RectF(0, 0, (float)bounds.Width, (float)bounds.Height),
+				availableSize.ToRectF(),
 				Android.Graphics.Path.Direction.Cw);
 
 			return output;

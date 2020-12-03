@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using Android.Graphics.Drawables;
 using Android.Graphics.Drawables.Shapes;
 using Android.Views;
+using System.Numerics;
 
 namespace Windows.UI.Xaml.Shapes
 {
@@ -45,12 +46,19 @@ namespace Windows.UI.Xaml.Shapes
 			}
 
 			// Scale the path using its Stretch
+			var translateMatrix = new Android.Graphics.Matrix();
+			var scaleMatrix = new Android.Graphics.Matrix();
+			translateMatrix.SetTranslate((float)ViewHelper.LogicalToPhysicalPixels(renderOriginX), (float)ViewHelper.LogicalToPhysicalPixels(renderOriginY));
+			scaleMatrix.SetScale((float)scaleX * (float)ViewHelper.Scale, (float)scaleY * (float)ViewHelper.Scale);
 
-			var matrix = new Android.Graphics.Matrix();
-			matrix.SetTranslate((float)ViewHelper.LogicalToPhysicalPixels(renderOriginX), (float)ViewHelper.LogicalToPhysicalPixels(renderOriginY));
-			matrix.SetScale((float)ViewHelper.LogicalToPhysicalPixels(scaleX), (float)ViewHelper.LogicalToPhysicalPixels(scaleY));
+			path.Transform(scaleMatrix);
+			path.Transform(translateMatrix);
 
-			path.Transform(matrix);
+			//var matrix = Matrix3x2.Identity;
+			//matrix *= Matrix3x2.CreateScale((float)scaleX * (float)ViewHelper.Scale, (float)scaleY * (float)ViewHelper.Scale);
+			//matrix *= Matrix3x2.CreateTranslation((float)ViewHelper.LogicalToPhysicalPixels(renderOriginX), (float)ViewHelper.LogicalToPhysicalPixels(renderOriginY));
+
+
 
 			// Draw the fill
 			var drawArea = GetPathBoundingBox(path);
