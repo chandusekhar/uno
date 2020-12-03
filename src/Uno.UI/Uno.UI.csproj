@@ -175,6 +175,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Remove="UI\Xaml\Shapes\ArbitraryShapeBase.Android.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="UI\Xaml\Shapes\ArbitraryShapeBase.Android.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Compile Include="Mixins\Android\BaseActivity.Callbacks.g.cs" />
 	  <Compile Include="Mixins\Android\FrameworkElementMixins.g.cs" />
 	  <Compile Include="Mixins\Android\FrameworkElementMixins.g.cs" />

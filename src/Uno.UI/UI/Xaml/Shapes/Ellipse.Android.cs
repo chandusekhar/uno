@@ -4,17 +4,30 @@ using Uno.UI;
 
 namespace Windows.UI.Xaml.Shapes
 {
-	public partial class Ellipse : ArbitraryShapeBase
+	public partial class Ellipse : Shape
 	{
-		protected override Size MeasureOverride(Size availableSize)
+		static Ellipse()
 		{
-			base.MeasureOverride(availableSize);
-
-			// Ellipse will only ask for its "minimum" defined size.
-			return this.GetMinMax().min.AtLeastZero();
+			StretchProperty.OverrideMetadata(typeof(Ellipse), new FrameworkPropertyMetadata(defaultValue: Media.Stretch.Fill));
 		}
 
-		protected override Android.Graphics.Path GetPath(Size availableSize)
+		/// <inheritdoc />
+		protected override Size MeasureOverride(Size availableSize)
+			=> base.MeasureRelativeShape(availableSize);
+
+		/// <inheritdoc />
+		protected override Size ArrangeOverride(Size finalSize)
+		{
+			var (shapeSize, renderingArea) = ArrangeRelativeShape(finalSize);
+
+			Render(renderingArea.Width > 0 && renderingArea.Height > 0
+				? GetPath(renderingArea.Size)
+				: null);
+
+			return shapeSize;
+		}
+
+		private Android.Graphics.Path GetPath(Size availableSize)
 		{
 			var bounds = availableSize.LogicalToPhysicalPixels();
 

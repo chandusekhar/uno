@@ -19,7 +19,7 @@ namespace Windows.UI.Xaml.Shapes
 	{
 		private SerialDisposable _layer = new SerialDisposable();
 
-		private void Render(Android.Graphics.Path path, double? width = null, double? height = null, double scaleX = 1d, double scaleY = 1d)
+		private protected void Render(Android.Graphics.Path path, Windows.Foundation.Size? pathSize = null, double scaleX = 1d, double scaleY = 1d, double renderOriginX = 0d, double renderOriginY = 0d)
 		{
 			//if (height == 0 || width == 0)
 			//{
@@ -45,52 +45,37 @@ namespace Windows.UI.Xaml.Shapes
 			}
 
 			// Scale the path using its Stretch
-			var matrix = new Android.Graphics.Matrix();
+
+
+			var scaleMatrix = new Android.Graphics.Matrix();
+			var translateMatrix = new Android.Graphics.Matrix();
 			var stretchMode = Stretch;
 
 			switch (stretchMode)
 			{
 				case Stretch.Fill:
+					translateMatrix.SetTranslate((float)renderOriginX, (float)renderOriginY);
+					break;
 				case Stretch.None:
-					matrix.SetScale((float)scaleX, (float)scaleY);
+					scaleMatrix.SetScale((float)scaleX, (float)scaleY);
 					break;
 				case Stretch.Uniform:
 					var scale = Math.Min(scaleX, scaleY);
-					matrix.SetScale((float)scale, (float)scale);
+					scaleMatrix.SetScale((float)scale, (float)scale);
+					translateMatrix.SetTranslate((float)renderOriginX, (float)renderOriginY);
 					break;
 				case Stretch.UniformToFill:
 					scale = Math.Max(scaleX, scaleY);
-					matrix.SetScale((float)scale, (float)scale);
+					scaleMatrix.SetScale((float)scale, (float)scale);
+					translateMatrix.SetTranslate((float)renderOriginX, (float)renderOriginY);
 					break;
 			}
-			path.Transform(matrix);
 
-			// Move the path using its alignements
-			var translation = new Android.Graphics.Matrix();
-
-			var pathBounds = new RectF();
-
-			// Compute the bounds. This is needed for stretched shapes and stroke thickness translation calculations.
-			path.ComputeBounds(pathBounds, true);
-
-			if (stretchMode == Stretch.None)
-			{
-				// Since we are not stretching, ensure we are using (0, 0) as origin.
-				pathBounds.Left = 0;
-				pathBounds.Top = 0;
-			}
-
-			if (!ShouldPreserveOrigin)
-			{
-				//We need to translate the shape to take in account the stroke thickness
-				translation.SetTranslate((float)(-pathBounds.Left + PhysicalStrokeThickness * 0.5f), (float)(-pathBounds.Top + PhysicalStrokeThickness * 0.5f));
-			}
-
-			path.Transform(translation);
-
+			//path.Transform(scaleMatrix);
+			path.Transform(translateMatrix);
 
 			// Draw the fill
-			var drawArea = new Windows.Foundation.Rect(0, 0, width ?? 0, height ?? 0);
+			var drawArea = new Windows.Foundation.Rect(0, 0, Width, Height);
 
 			if (fill is ImageBrush fillImageBrush)
 			{
@@ -103,7 +88,7 @@ namespace Windows.UI.Xaml.Shapes
 
 				var lineDrawable = new PaintDrawable
 				{
-					Shape = new PathShape(path, (float)width, (float)height)
+					Shape = new PathShape(path, (float)drawArea.Width, (float)drawArea.Height)
 				};
 				lineDrawable.Paint.Color = fillPaint.Color;
 				lineDrawable.Paint.SetShader(fillPaint.Shader);
@@ -120,7 +105,7 @@ namespace Windows.UI.Xaml.Shapes
 				{
 					var lineDrawable = new PaintDrawable
 					{
-						Shape = new PathShape(path, (float)width, (float)height)
+						Shape = new PathShape(path, (float)drawArea.Width, (float)drawArea.Height)
 					};
 					lineDrawable.Paint.Color = strokeBrush.Color;
 					lineDrawable.Paint.SetShader(strokeBrush.Shader);
@@ -138,7 +123,7 @@ namespace Windows.UI.Xaml.Shapes
 
 			// Set bounds must always be called, otherwise the android layout engine can't determine
 			// the rendering size. See Drawable documentation for details.
-			layerDrawable.SetBounds(0, 0, (int)width, (int)height);
+			layerDrawable.SetBounds(0, 0, (int)drawArea.Width, (int)drawArea.Height);
 
 			_layer.Disposable = SetOverlay(this as View, layerDrawable);
 		}

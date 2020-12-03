@@ -101,7 +101,7 @@ namespace Windows.UI.Xaml.Shapes
 				pathBounds.Top = 0;
 			}
 
-			if (!ShouldPreserveOrigin)
+			if (Stretch != Stretch.None)
 			{
 				//We need to translate the shape to take in account the stroke thickness
 				translation.SetTranslate((float)(-pathBounds.Left + PhysicalStrokeThickness * 0.5f), (float)(-pathBounds.Top + PhysicalStrokeThickness * 0.5f));
@@ -197,103 +197,103 @@ namespace Windows.UI.Xaml.Shapes
 			}
 		}
 
-		protected override void OnLayoutCore(bool changed, int left, int top, int right, int bottom)
-		{
-			_controlWidth = right - left;
-			_controlHeight = bottom - top;
+		//protected override void OnLayoutCore(bool changed, int left, int top, int right, int bottom)
+		//{
+		//	_controlWidth = right - left;
+		//	_controlHeight = bottom - top;
 
-			RefreshShape();
-			base.OnLayoutCore(changed, left, top, right, bottom);
-		}
+		//	RefreshShape();
+		//	base.OnLayoutCore(changed, left, top, right, bottom);
+		//}
 
-		protected override Size MeasureOverride(Size availableSize)
-		{
-			if (availableSize == default)
-			{
-				return default;
-			}
+		//protected override Size MeasureOverride(Size availableSize)
+		//{
+		//	if (availableSize == default)
+		//	{
+		//		return default;
+		//	}
 
-			var strokeThickness = ActualStrokeThickness;
-			var strokeSize = new Size(strokeThickness, strokeThickness);
+		//	var strokeThickness = ActualStrokeThickness;
+		//	var strokeSize = new Size(strokeThickness, strokeThickness);
 
-			var availableSizeMinusStroke = availableSize.Subtract(strokeSize);
+		//	var availableSizeMinusStroke = availableSize.Subtract(strokeSize);
 
-			var availableSizeWithAppliedConstrains =
-				this.ApplySizeConstraints(availableSizeMinusStroke, strokeSize);
+		//	var availableSizeWithAppliedConstrains =
+		//		this.ApplySizeConstraints(availableSizeMinusStroke, strokeSize);
 
-			_lastAvailableSize = availableSizeWithAppliedConstrains;
+		//	_lastAvailableSize = availableSizeWithAppliedConstrains;
 
-			var path = GetPath(availableSizeWithAppliedConstrains);
-			if (path == null)
-			{
-				return default;
-			}
+		//	var path = GetPath(availableSizeWithAppliedConstrains);
+		//	if (path == null)
+		//	{
+		//		return default;
+		//	}
 
-			var physicalBounds = new RectF();
-			path.ComputeBounds(physicalBounds, false);
+		//	var physicalBounds = new RectF();
+		//	path.ComputeBounds(physicalBounds, false);
 
-			var bounds = physicalBounds.PhysicalToLogicalPixels();
+		//	var bounds = physicalBounds.PhysicalToLogicalPixels();
 
-			var stretch = Stretch;
-			var preserveOrigin = ShouldPreserveOrigin || stretch == Stretch.None;
-			var pathWidth = preserveOrigin ? bounds.Right : bounds.Width();
-			var pathHeight = preserveOrigin ? bounds.Bottom : bounds.Height();
+		//	var stretch = Stretch;
+		//	var preserveOrigin = ;
+		//	var pathWidth = preserveOrigin ? bounds.Right : bounds.Width();
+		//	var pathHeight = preserveOrigin ? bounds.Bottom : bounds.Height();
 
-			_scaleX = availableSizeWithAppliedConstrains.Width / pathWidth;
-			_scaleY = availableSizeWithAppliedConstrains.Height / pathHeight;
+		//	_scaleX = availableSizeWithAppliedConstrains.Width / pathWidth;
+		//	_scaleY = availableSizeWithAppliedConstrains.Height / pathHeight;
 
-			//Make sure that we have a valid scale if both of them are not set
-			if (double.IsInfinity(_scaleX) || double.IsNaN(_scaleX))
-			{
-				_scaleX = 1;
-			}
-			if (double.IsInfinity(_scaleY) || double.IsNaN(_scaleY))
-			{
-				_scaleY = 1;
-			}
+		//	//Make sure that we have a valid scale if both of them are not set
+		//	if (double.IsInfinity(_scaleX) || double.IsNaN(_scaleX))
+		//	{
+		//		_scaleX = 1;
+		//	}
+		//	if (double.IsInfinity(_scaleY) || double.IsNaN(_scaleY))
+		//	{
+		//		_scaleY = 1;
+		//	}
 
-			var calculatedWidth = 0d;
-			var calculatedHeight = 0d;
+		//	var calculatedWidth = 0d;
+		//	var calculatedHeight = 0d;
 
-			// Calculate size following stretch mode
-			switch (stretch)
-			{
-				// If the Stretch is None, the drawing is not the same size as the control
-				case Stretch.None:
-					_scaleX = 1;
-					_scaleY = 1;
-					calculatedWidth = pathWidth;
-					calculatedHeight = pathHeight;
-					break;
-				case Stretch.Fill:
-					calculatedWidth = pathWidth * _scaleX;
-					calculatedHeight = pathHeight * _scaleY;
+		//	// Calculate size following stretch mode
+		//	switch (stretch)
+		//	{
+		//		// If the Stretch is None, the drawing is not the same size as the control
+		//		case Stretch.None:
+		//			_scaleX = 1;
+		//			_scaleY = 1;
+		//			calculatedWidth = pathWidth;
+		//			calculatedHeight = pathHeight;
+		//			break;
+		//		case Stretch.Fill:
+		//			calculatedWidth = pathWidth * _scaleX;
+		//			calculatedHeight = pathHeight * _scaleY;
 
-					break;
-				// Override the _calculated dimensions if the stretch is Uniform or UniformToFill
-				case Stretch.Uniform:
-				{
-					var scale = Math.Min(_scaleX, _scaleY);
-					calculatedWidth = pathWidth * scale;
-					calculatedHeight = pathHeight * scale;
-					break;
-				}
-				case Stretch.UniformToFill:
-				{
-					var scale = Math.Max(_scaleX, _scaleY);
-					calculatedWidth = pathWidth * scale;
-					calculatedHeight = pathHeight * scale;
-					break;
-				}
-			}
+		//			break;
+		//		// Override the _calculated dimensions if the stretch is Uniform or UniformToFill
+		//		case Stretch.Uniform:
+		//		{
+		//			var scale = Math.Min(_scaleX, _scaleY);
+		//			calculatedWidth = pathWidth * scale;
+		//			calculatedHeight = pathHeight * scale;
+		//			break;
+		//		}
+		//		case Stretch.UniformToFill:
+		//		{
+		//			var scale = Math.Max(_scaleX, _scaleY);
+		//			calculatedWidth = pathWidth * scale;
+		//			calculatedHeight = pathHeight * scale;
+		//			break;
+		//		}
+		//	}
 
-			var calculatedSize =
-				new Size(
-					calculatedWidth,
-					calculatedHeight)
-					.Add(strokeSize);
+		//	var calculatedSize =
+		//		new Size(
+		//			calculatedWidth,
+		//			calculatedHeight)
+		//			.Add(strokeSize);
 
-			return calculatedSize;
-		}
+		//	return calculatedSize;
+		//}
 	}
 }

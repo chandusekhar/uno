@@ -3,9 +3,17 @@ using Windows.Foundation;
 
 namespace Windows.UI.Xaml.Shapes
 {
-	public partial class Polyline
+	public partial class Polyline : Shape
 	{
-		protected override Android.Graphics.Path GetPath(Size availableSize)
+		/// <inheritdoc />
+		protected override Size MeasureOverride(Size availableSize)
+			=> MeasureAbsoluteShape(availableSize, GetPath());
+
+		/// <inheritdoc />
+		protected override Size ArrangeOverride(Size finalSize)
+			=> ArrangeAbsoluteShape(finalSize, GetPath());
+
+		private Android.Graphics.Path GetPath()
 		{
 			var coords = Points;
 

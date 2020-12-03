@@ -1,45 +1,78 @@
-﻿using Android.Graphics;
+﻿using Windows.UI.Composition;
+using Windows.Foundation;
+using Windows.Graphics;
+using Android.Graphics;
 using Uno.UI;
-using System;
 
 namespace Windows.UI.Xaml.Shapes
 {
 	public partial class Rectangle : Shape
 	{
+		static Rectangle()
+		{
+			StretchProperty.OverrideMetadata(typeof(Rectangle), new FrameworkPropertyMetadata(defaultValue: Media.Stretch.Fill));
+		}
+
 		public Rectangle()
 		{
-			//Set default stretch value
-			this.Stretch = Media.Stretch.Fill;
-			SetWillNotDraw(false);
 		}
+			
+		/// <inheritdoc />
+		protected override Size MeasureOverride(Size availableSize)
+			=> base.MeasureRelativeShape(availableSize);
 
-		protected override void OnDraw(Canvas canvas)
+		/// <inheritdoc />
+		protected override Size ArrangeOverride(Size finalSize)
 		{
-			base.OnDraw(canvas);
-			var drawArea = GetDrawArea(canvas);
-			var rx = ViewHelper.LogicalToPhysicalPixels(RadiusX);
-			var ry = ViewHelper.LogicalToPhysicalPixels(RadiusY);
+			var (shapeSize, renderingArea) = ArrangeRelativeShape(finalSize);
 
-			var fillRect = new Android.Graphics.Path();
-			fillRect.AddRoundRect(drawArea.ToRectF(), rx, ry, Android.Graphics.Path.Direction.Cw);
+			Android.Graphics.Path path;
 
-			DrawFill(canvas, drawArea, fillRect);
-			DrawStroke(canvas, drawArea, (c, r, p) => c.DrawRoundRect(r.ToRectF(), rx, ry, p));
+			if (renderingArea.Width > 0 && renderingArea.Height > 0)
+			{
+				var rx = ViewHelper.LogicalToPhysicalPixels(RadiusX);
+				var ry = ViewHelper.LogicalToPhysicalPixels(RadiusY);
+
+				path = new Android.Graphics.Path();
+				path.AddRoundRect(renderingArea.ToRectF(), rx, ry, Android.Graphics.Path.Direction.Cw);
+
+			}
+			else
+			{
+				path = null;
+			}
+
+			Render(path);
+
+			return shapeSize;
 		}
+		//protected override void OnDraw(Canvas canvas)
+		//{
+		//	base.OnDraw(canvas);
+		//	var drawArea = GetDrawArea(canvas);
+		//	var rx = ViewHelper.LogicalToPhysicalPixels(RadiusX);
+		//	var ry = ViewHelper.LogicalToPhysicalPixels(RadiusY);
 
-		partial void OnRadiusXChangedPartial()
-		{
-			Invalidate();
-		}
+		//	var fillRect = new Android.Graphics.Path();
+		//	fillRect.AddRoundRect(drawArea.ToRectF(), rx, ry, Android.Graphics.Path.Direction.Cw);
 
-		partial void OnRadiusYChangedPartial()
-		{
-			Invalidate();
-		}
+		//	DrawFill(canvas, drawArea, fillRect);
+		//	DrawStroke(canvas, drawArea, (c, r, p) => c.DrawRoundRect(r.ToRectF(), rx, ry, p));
+		//}
 
-		protected override void RefreshShape(bool forceRefresh = false)
-		{
-			Invalidate();
-		}
+		//partial void OnRadiusXChangedPartial()
+		//{
+		//	Invalidate();
+		//}
+
+		//partial void OnRadiusYChangedPartial()
+		//{
+		//	Invalidate();
+		//}
+
+		//protected override void RefreshShape(bool forceRefresh = false)
+		//{
+		//	Invalidate();
+		//}
 	}
 }
