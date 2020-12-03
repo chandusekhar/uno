@@ -19,7 +19,7 @@ namespace Windows.UI.Xaml.Shapes
 	{
 		private SerialDisposable _layer = new SerialDisposable();
 
-		private protected void Render(Android.Graphics.Path path, Windows.Foundation.Size? pathSize = null, double scaleX = 1d, double scaleY = 1d, double renderOriginX = 0d, double renderOriginY = 0d)
+		private protected void Render(Android.Graphics.Path path, double scaleX = 1d, double scaleY = 1d, double renderOriginX = 0d, double renderOriginY = 0d)
 		{
 			//if (height == 0 || width == 0)
 			//{
@@ -46,36 +46,14 @@ namespace Windows.UI.Xaml.Shapes
 
 			// Scale the path using its Stretch
 
+			var matrix = new Android.Graphics.Matrix();
+			matrix.SetTranslate((float)ViewHelper.LogicalToPhysicalPixels(renderOriginX), (float)ViewHelper.LogicalToPhysicalPixels(renderOriginY));
+			matrix.SetScale((float)ViewHelper.LogicalToPhysicalPixels(scaleX), (float)ViewHelper.LogicalToPhysicalPixels(scaleY));
 
-			var scaleMatrix = new Android.Graphics.Matrix();
-			var translateMatrix = new Android.Graphics.Matrix();
-			var stretchMode = Stretch;
-
-			switch (stretchMode)
-			{
-				case Stretch.Fill:
-					translateMatrix.SetTranslate((float)renderOriginX, (float)renderOriginY);
-					break;
-				case Stretch.None:
-					scaleMatrix.SetScale((float)scaleX, (float)scaleY);
-					break;
-				case Stretch.Uniform:
-					var scale = Math.Min(scaleX, scaleY);
-					scaleMatrix.SetScale((float)scale, (float)scale);
-					translateMatrix.SetTranslate((float)renderOriginX, (float)renderOriginY);
-					break;
-				case Stretch.UniformToFill:
-					scale = Math.Max(scaleX, scaleY);
-					scaleMatrix.SetScale((float)scale, (float)scale);
-					translateMatrix.SetTranslate((float)renderOriginX, (float)renderOriginY);
-					break;
-			}
-
-			//path.Transform(scaleMatrix);
-			path.Transform(translateMatrix);
+			path.Transform(matrix);
 
 			// Draw the fill
-			var drawArea = new Windows.Foundation.Rect(0, 0, Width, Height);
+			var drawArea = GetPathBoundingBox(path);
 
 			if (fill is ImageBrush fillImageBrush)
 			{
