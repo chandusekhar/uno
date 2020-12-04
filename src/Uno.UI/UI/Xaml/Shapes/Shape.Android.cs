@@ -29,6 +29,7 @@ namespace Windows.UI.Xaml.Shapes
 			{
 				// Nothing to draw!
 				_layer.Disposable = null;
+				return;
 			}
 
 			// predict list capacity to reduce memory handling
@@ -38,6 +39,7 @@ namespace Windows.UI.Xaml.Shapes
 			if (path == null)
 			{
 				_layer.Disposable = null;
+				return;
 			}
 
 			// Scale the path using its Stretch
@@ -50,17 +52,48 @@ namespace Windows.UI.Xaml.Shapes
 			path.Transform(scaleMatrix);
 			path.Transform(translateMatrix);
 
-			//var matrix = Matrix3x2.Identity;
-			//matrix *= Matrix3x2.CreateScale((float)scaleX * (float)ViewHelper.Scale, (float)scaleY * (float)ViewHelper.Scale);
-			//matrix *= Matrix3x2.CreateTranslation((float)ViewHelper.LogicalToPhysicalPixels(renderOriginX), (float)ViewHelper.LogicalToPhysicalPixels(renderOriginY));
-
-
-
-			// Draw the fill
 			var drawArea = GetPathBoundingBox(path);
+			size = size?.LogicalToPhysicalPixels();
 			drawArea.Width = size?.Width ?? drawArea.Width;
 			drawArea.Height = size?.Height ?? drawArea.Height;
 
+			DrawFill(path, fill, drawables, drawArea);
+			DrawStroke(path, stroke, drawables, drawArea);
+
+			var layerDrawable = new LayerDrawable(drawables.ToArray());
+
+			// Set bounds must always be called, otherwise the android layout engine can't determine
+			// the rendering size. See Drawable documentation for details.
+			layerDrawable.SetBounds(0, 0, (int)drawArea.Width, (int)drawArea.Height);
+
+			_layer.Disposable = SetOverlay(this as View, layerDrawable);
+		}
+
+		private void DrawStroke(Android.Graphics.Path path, Media.Brush stroke, List<Drawable> drawables, Foundation.Rect drawArea)
+		{
+			if (stroke != null)
+			{
+				using (var strokeBrush = new Paint(stroke.GetStrokePaint(drawArea)))
+				{
+					var lineDrawable = new PaintDrawable
+					{
+						Shape = new PathShape(path, (float)drawArea.Width, (float)drawArea.Height)
+					};
+					lineDrawable.Paint.Color = strokeBrush.Color;
+					lineDrawable.Paint.SetShader(strokeBrush.Shader);
+					lineDrawable.Paint.StrokeWidth = (float)PhysicalStrokeThickness;
+					lineDrawable.Paint.SetStyle(Paint.Style.Stroke);
+					lineDrawable.Paint.Alpha = strokeBrush.Alpha;
+
+					SetStrokeDashEffect(lineDrawable.Paint);
+
+					drawables.Add(lineDrawable);
+				}
+			}
+		}
+
+		private void DrawFill(Android.Graphics.Path path, Media.Brush fill, List<Drawable> drawables, Foundation.Rect drawArea)
+		{
 			if (fill is ImageBrush fillImageBrush)
 			{
 				var bitmapDrawable = new BitmapDrawable(Context.Resources, fillImageBrush.TryGetBitmap(drawArea, () => RefreshShape(forceRefresh: true), path));
@@ -81,35 +114,6 @@ namespace Windows.UI.Xaml.Shapes
 
 				drawables.Add(lineDrawable);
 			}
-
-			// Draw the contour
-			if (stroke != null)
-			{
-				using (var strokeBrush = new Paint(stroke.GetStrokePaint(drawArea)))
-				{
-					var lineDrawable = new PaintDrawable
-					{
-						Shape = new PathShape(path, (float)drawArea.Width, (float)drawArea.Height)
-					};
-					lineDrawable.Paint.Color = strokeBrush.Color;
-					lineDrawable.Paint.SetShader(strokeBrush.Shader);
-					lineDrawable.Paint.StrokeWidth = (float)PhysicalStrokeThickness;
-					lineDrawable.Paint.SetStyle(Paint.Style.Stroke);
-					lineDrawable.Paint.Alpha = strokeBrush.Alpha;
-
-					SetStrokeDashEffect(lineDrawable.Paint);
-
-					drawables.Add(lineDrawable);
-				}
-			}
-
-			var layerDrawable = new LayerDrawable(drawables.ToArray());
-
-			// Set bounds must always be called, otherwise the android layout engine can't determine
-			// the rendering size. See Drawable documentation for details.
-			layerDrawable.SetBounds(0, 0, (int)drawArea.Width, (int)drawArea.Height);
-
-			_layer.Disposable = SetOverlay(this as View, layerDrawable);
 		}
 
 		private IDisposable SetOverlay(View view, Drawable drawable)

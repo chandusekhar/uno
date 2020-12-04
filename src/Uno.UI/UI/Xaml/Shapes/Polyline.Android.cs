@@ -21,18 +21,16 @@ namespace Windows.UI.Xaml.Shapes
 			{
 				return null;
 			}
+			var output = new Android.Graphics.Path();
 
-			var streamGeometry = GeometryHelper.Build(c =>
+			output.MoveTo((float)coords[0].X, (float)coords[0].Y);
+			for (var i = 1; i < coords.Count; i++)
 			{
-				c.BeginFigure(new Point(coords[0].X, coords[0].Y), true, false);
-				for (var i = 1; i < coords.Count; i++)
-				{
-					c.LineTo(new Point(coords[i].X, coords[i].Y), true, false);
-				}
-			});
+				output.LineTo((float)coords[i].X, (float)coords[i].Y);
+			}
 
-			return streamGeometry.ToPath();
 
+			return output;
 		}
 	}
 }
