@@ -547,7 +547,7 @@ namespace Windows.UI.Xaml.Shapes
 #elif __SKIA__
 			Render(path, renderScale.x, renderScale.y, renderOrigin.x, renderOrigin.y);
 #elif __ANDROID__
-			Render(path, renderScale.x, renderScale.y, renderOrigin.x, renderOrigin.y);
+			Render(path, size, renderScale.x, renderScale.y, renderOrigin.x, renderOrigin.y);
 #endif
 
 			return size;

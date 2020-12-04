@@ -20,13 +20,8 @@ namespace Windows.UI.Xaml.Shapes
 	{
 		private SerialDisposable _layer = new SerialDisposable();
 
-		private protected void Render(Android.Graphics.Path path, double scaleX = 1d, double scaleY = 1d, double renderOriginX = 0d, double renderOriginY = 0d)
+		private protected void Render(Android.Graphics.Path path, Foundation.Size? size = null, double scaleX = 1d, double scaleY = 1d, double renderOriginX = 0d, double renderOriginY = 0d)
 		{
-			//if (height == 0 || width == 0)
-			//{
-			//	return Disposable.Empty;
-			//}
-
 			var fill = Fill;
 			var stroke = Stroke;
 
@@ -48,6 +43,7 @@ namespace Windows.UI.Xaml.Shapes
 			// Scale the path using its Stretch
 			var translateMatrix = new Android.Graphics.Matrix();
 			var scaleMatrix = new Android.Graphics.Matrix();
+
 			translateMatrix.SetTranslate((float)ViewHelper.LogicalToPhysicalPixels(renderOriginX), (float)ViewHelper.LogicalToPhysicalPixels(renderOriginY));
 			scaleMatrix.SetScale((float)scaleX * (float)ViewHelper.Scale, (float)scaleY * (float)ViewHelper.Scale);
 
@@ -62,6 +58,8 @@ namespace Windows.UI.Xaml.Shapes
 
 			// Draw the fill
 			var drawArea = GetPathBoundingBox(path);
+			drawArea.Width = size?.Width ?? drawArea.Width;
+			drawArea.Height = size?.Height ?? drawArea.Height;
 
 			if (fill is ImageBrush fillImageBrush)
 			{

@@ -1,9 +1,11 @@
 ﻿using Windows.Foundation;
+using System;
+using Uno.Media;
 using Uno.UI;
 
 namespace Windows.UI.Xaml.Shapes
 {
-    public partial class Line : Shape
+	public partial class Line : Shape
 	{
 		/// <inheritdoc />
 		protected override Size MeasureOverride(Size availableSize)
@@ -17,8 +19,8 @@ namespace Windows.UI.Xaml.Shapes
 		{
 			var output = new Android.Graphics.Path();
 
-			output.MoveTo(ViewHelper.LogicalToPhysicalPixels(X1), ViewHelper.LogicalToPhysicalPixels(Y1));
-			output.LineTo(ViewHelper.LogicalToPhysicalPixels(X2), ViewHelper.LogicalToPhysicalPixels(Y2));
+			output.MoveTo((float)X1, (float)Y1);
+			output.LineTo((float)X2, (float)Y2);
 
 			return output;
 		}
