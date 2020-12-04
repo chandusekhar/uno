@@ -23,6 +23,7 @@ using Windows.UI.Xaml.Shapes;
 using Uno.Extensions;
 using Uno.UI.Samples.Controls;
 using System.IO;
+using Uno.UI;
 
 #if __IOS__
 using UIKit;
@@ -320,12 +321,17 @@ namespace UITests.Windows_UI_Xaml_Shapes
 #elif __ANDROID__
 		private static byte[] RenderAsPng(FrameworkElement elt)
 		{
-			Android.Graphics.Bitmap b = Android.Graphics.Bitmap.CreateBitmap((int)elt.ActualWidth, (int)elt.ActualHeight, Android.Graphics.Bitmap.Config.Argb8888);
+			var elt = (FrameworkElement)MyStackPanel;
+			Android.Graphics.Bitmap b = Android.Graphics.Bitmap.CreateBitmap((int)ViewHelper.LogicalToPhysicalPixels(elt.ActualWidth), (int)ViewHelper.LogicalToPhysicalPixels(elt.ActualHeight), Android.Graphics.Bitmap.Config.Argb8888);
 			Android.Graphics.Canvas c = new Android.Graphics.Canvas(b);
 			var view = elt as Android.Views.View;
+
+			view.Layout(0, 0, (int)ViewHelper.LogicalToPhysicalPixels(elt.ActualWidth), (int)ViewHelper.LogicalToPhysicalPixels(elt.ActualHeight));
+			c.DrawColor(Android.Graphics.Color.White);
 			view.Draw(c);
 			using var stream = new MemoryStream();
 			b.Compress(Android.Graphics.Bitmap.CompressFormat.Png, 100, stream);
+
 			return stream.ToArray();
 		}
 #else
