@@ -13,32 +13,50 @@ using Android.Graphics.Drawables;
 using Android.Graphics.Drawables.Shapes;
 using Android.Views;
 using System.Numerics;
+using Canvas = Android.Graphics.Canvas;
 
 namespace Windows.UI.Xaml.Shapes
 {
 	public partial class Shape
 	{
-		private SerialDisposable _layer = new SerialDisposable();
+		private Android.Graphics.Path _path;
+		private Foundation.Rect _drawArea;
 
-		private protected void Render(Android.Graphics.Path path, Foundation.Size? size = null, double scaleX = 1d, double scaleY = 1d, double renderOriginX = 0d, double renderOriginY = 0d)
+		protected bool HasStroke
 		{
-			var fill = Fill;
-			var stroke = Stroke;
+			get { return Stroke != null && ActualStrokeThickness > 0 }
+		}
 
-			if (fill == null && stroke == null)
+		internal double PhysicalStrokeThickness
+		{
+			get { return ViewHelper.LogicalToPhysicalPixels((double)ActualStrokeThickness); }
+		}
+
+		partial void PartialInitialize() => SetWillNotDraw(false);
+
+		protected override void OnDraw(Canvas canvas)
+		{
+			base.OnDraw(canvas);
+			if (_path == null)
 			{
-				// Nothing to draw!
-				_layer.Disposable = null;
 				return;
 			}
 
-			// predict list capacity to reduce memory handling
-			var drawablesCapacity = fill != null && stroke != null ? 2 : 1;
-			var drawables = new List<Drawable>(drawablesCapacity);
+			DrawFill(canvas);
+			DrawStroke(canvas);
+		}
 
-			if (path == null)
+		private protected void Render(
+			Android.Graphics.Path path,
+			Foundation.Size? size = null,
+			double scaleX = 1d,
+			double scaleY = 1d,
+			double renderOriginX = 0d,
+			double renderOriginY = 0d)
+		{
+			_path = path;
+			if (_path == null)
 			{
-				_layer.Disposable = null;
 				return;
 			}
 
@@ -49,24 +67,35 @@ namespace Windows.UI.Xaml.Shapes
 			translateMatrix.SetTranslate((float)ViewHelper.LogicalToPhysicalPixels(renderOriginX), (float)ViewHelper.LogicalToPhysicalPixels(renderOriginY));
 			scaleMatrix.SetScale((float)scaleX * (float)ViewHelper.Scale, (float)scaleY * (float)ViewHelper.Scale);
 
-			path.Transform(scaleMatrix);
-			path.Transform(translateMatrix);
+			_path.Transform(scaleMatrix);
+			_path.Transform(translateMatrix);
 
-			var drawArea = GetPathBoundingBox(path);
+			_drawArea = GetPathBoundingBox(_path);
 			size = size?.LogicalToPhysicalPixels();
-			drawArea.Width = size?.Width ?? drawArea.Width;
-			drawArea.Height = size?.Height ?? drawArea.Height;
+			_drawArea.Width = size?.Width ?? _drawArea.Width;
+			_drawArea.Height = size?.Height ?? _drawArea.Height;
 
-			DrawFill(path, fill, drawables, drawArea);
-			DrawStroke(path, stroke, drawables, drawArea);
+			Invalidate();
 
-			var layerDrawable = new LayerDrawable(drawables.ToArray());
+		}
 
-			// Set bounds must always be called, otherwise the android layout engine can't determine
-			// the rendering size. See Drawable documentation for details.
-			layerDrawable.SetBounds(0, 0, (int)drawArea.Width, (int)drawArea.Height);
-
-			_layer.Disposable = SetOverlay(this as View, layerDrawable);
+		private void DrawFill(Canvas canvas)
+		{
+			if (!_drawArea.HasZeroArea())
+			{
+				var imageBrushFill = Fill as ImageBrush;
+				if (imageBrushFill != null)
+				{
+					imageBrushFill.ScheduleRefreshIfNeeded(_drawArea, Invalidate);
+					imageBrushFill.DrawBackground(canvas, _drawArea, _path);
+				}
+				else
+				{
+					var fill = Fill ?? SolidColorBrushHelper.Transparent;
+					var fillPaint = fill.GetFillPaint(_drawArea);
+					canvas.DrawPath(_path, fillPaint);
+				}
+			}
 		}
 
 		private void DrawStroke(Android.Graphics.Path path, Media.Brush stroke, List<Drawable> drawables, Foundation.Rect drawArea)
@@ -92,144 +121,17 @@ namespace Windows.UI.Xaml.Shapes
 			}
 		}
 
-		private void DrawFill(Android.Graphics.Path path, Media.Brush fill, List<Drawable> drawables, Foundation.Rect drawArea)
-		{
-			if (fill is ImageBrush fillImageBrush)
-			{
-				var bitmapDrawable = new BitmapDrawable(Context.Resources, fillImageBrush.TryGetBitmap(drawArea, () => RefreshShape(forceRefresh: true), path));
-				drawables.Add(bitmapDrawable);
-			}
-			else if (fill != null)
-			{
-				var fillPaint = fill.GetFillPaint(drawArea);
-
-				var lineDrawable = new PaintDrawable
-				{
-					Shape = new PathShape(path, (float)drawArea.Width, (float)drawArea.Height)
-				};
-				lineDrawable.Paint.Color = fillPaint.Color;
-				lineDrawable.Paint.SetShader(fillPaint.Shader);
-				lineDrawable.Paint.SetStyle(Paint.Style.Fill);
-				lineDrawable.Paint.Alpha = fillPaint.Alpha;
-
-				drawables.Add(lineDrawable);
-			}
-		}
-
-		private IDisposable SetOverlay(View view, Drawable drawable)
-		{
-#if __ANDROID_18__
-			if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Kitkat)
-			{
-				using (PreventRequestLayout())
-				{
-					Overlay.Add(drawable);
-				}
-
-				return Disposable.Create(
-					() =>
-					{
-						using (PreventRequestLayout())
-						{
-							Overlay.Remove(drawable);
-						}
-					}
-				);
-			}
-			else
-#endif
-			{
-#pragma warning disable 0618 // Used for compatibility with SetBackgroundDrawable and previous API Levels
-
-				// Set overlay is not supported by this platform, set use the background instead.
-				// It'll break some scenarios, like having borders on top of the content.
-				view.SetBackgroundDrawable(drawable);
-				return Disposable.Create(() => view.SetBackgroundDrawable(null));
-
-#pragma warning restore 0618
-			}
-		}
-
-		protected bool HasStroke
-		{
-			get { return Stroke != null && ActualStrokeThickness > 0; }
-		}
-
-		internal double PhysicalStrokeThickness
-		{
-			get { return ViewHelper.LogicalToPhysicalPixels((double)ActualStrokeThickness); }
-		}
-		private Windows.Foundation.Rect GetPathBoundingBox(Android.Graphics.Path path)
-		{
-			var pathBounds = new RectF();
-			path.ComputeBounds(pathBounds, true);
-			return pathBounds;
-		}
-
-		protected Windows.Foundation.Rect GetDrawArea(Android.Graphics.Canvas canvas)
-		{
-			var drawSize = default(Windows.Foundation.Size);
-
-			var suggestedWidth = canvas.Width;
-			var suggestedHeight = canvas.Height;
-
-			switch (Stretch)
-			{
-				case Stretch.Fill:
-					drawSize.Width = suggestedWidth;
-					drawSize.Height = suggestedHeight;
-					break;
-				case Stretch.None:
-					drawSize.Width = double.IsNaN(Width) || Width == 0 ? 0 : suggestedWidth;
-					drawSize.Height = double.IsNaN(Height) || Height == 0 ? 0 : suggestedHeight;
-					break;
-				case Stretch.Uniform:
-					drawSize.Width = Math.Min(suggestedWidth, suggestedHeight);
-					drawSize.Height = Math.Min(suggestedWidth, suggestedHeight);
-					break;
-				case Stretch.UniformToFill:
-					drawSize.Width = Math.Max(suggestedWidth, suggestedHeight);
-					drawSize.Height = Math.Max(suggestedWidth, suggestedHeight);
-					break;
-			}
-
-			var drawArea = HasStroke
-				? GetAdjustedRectangle(drawSize, PhysicalStrokeThickness)
-				: new Windows.Foundation.Rect(Windows.Foundation.Point.Zero, drawSize);
-
-			return drawArea;
-		}
-
-		protected void DrawFill(Android.Graphics.Canvas canvas, Windows.Foundation.Rect fillArea, Android.Graphics.Path fillPath)
-		{
-			if (!fillArea.HasZeroArea())
-			{
-				var imageBrushFill = Fill as ImageBrush;
-				if (imageBrushFill != null)
-				{
-					imageBrushFill.ScheduleRefreshIfNeeded(fillArea, Invalidate);
-					imageBrushFill.DrawBackground(canvas, fillArea, fillPath);
-				}
-				else
-				{
-					var fill = Fill ?? SolidColorBrushHelper.Transparent;
-					var fillPaint = fill.GetFillPaint(fillArea);
-					canvas.DrawPath(fillPath, fillPaint);
-				}
-			}
-		}
-
-		protected void DrawStroke(Android.Graphics.Canvas canvas, Windows.Foundation.Rect strokeArea, Action<Android.Graphics.Canvas, Windows.Foundation.Rect, Paint> drawingMethod)
+		private void DrawStroke(Canvas canvas)
 		{
 			if (HasStroke)
 			{
 				var strokeThickness = PhysicalStrokeThickness;
 
-				using (var strokePaint = new Paint(Stroke.GetStrokePaint(strokeArea)))
+				using (var strokePaint = new Paint(Stroke.GetStrokePaint(_drawArea)))
 				{
 					SetStrokeDashEffect(strokePaint);
 
-					if (strokeArea.HasZeroArea())
+					if (_drawArea.HasZeroArea())
 					{
 						//Draw the stroke as a fill because the shape has no area
 						strokePaint.SetStyle(Paint.Style.Fill);
@@ -238,13 +140,13 @@ namespace Windows.UI.Xaml.Shapes
 					else
 					{
 						strokePaint.StrokeWidth = (float)strokeThickness;
-						drawingMethod(canvas, strokeArea, strokePaint);
+						canvas.DrawPath(_path, strokePaint);
 					}
 				}
 			}
 		}
 
-		protected void SetStrokeDashEffect(Paint strokePaint)
+		private void SetStrokeDashEffect(Paint strokePaint)
 		{
 			var strokeDashArray = StrokeDashArray;
 
@@ -274,26 +176,11 @@ namespace Windows.UI.Xaml.Shapes
 			}
 		}
 
-		/// <summary>
-		/// Convert the drawSize to a drawArea adjusted to prevent the shape's stroke from exceeding its bounds (half the strokeThickness is drawn outside the drawArea)
-		/// </summary>
-		/// <param name="drawSize"></param>
-		/// <param name="strokeThickness"></param>
-		/// <returns></returns>
-		private static Windows.Foundation.Rect GetAdjustedRectangle(Windows.Foundation.Size drawSize, double strokeThickness)
+		private Windows.Foundation.Rect GetPathBoundingBox(Android.Graphics.Path path)
 		{
-			if (drawSize == default(Windows.Foundation.Size) || double.IsNaN(drawSize.Width) || double.IsNaN(drawSize.Height))
-			{
-				return Windows.Foundation.Rect.Empty;
-			}
-
-			return new Windows.Foundation.Rect
-			(
-				x: (float)(strokeThickness / 2), 
-				y: (float)(strokeThickness / 2),
-				width: (float)(drawSize.Width - strokeThickness), 
-				height: (float)(drawSize.Height - strokeThickness)
-			);
+			var pathBounds = new RectF();
+			path.ComputeBounds(pathBounds, true);
+			return pathBounds;
 		}
 
 		partial void OnFillUpdatedPartial()
