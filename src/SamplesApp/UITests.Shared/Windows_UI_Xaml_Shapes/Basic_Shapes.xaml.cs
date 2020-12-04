@@ -321,7 +321,6 @@ namespace UITests.Windows_UI_Xaml_Shapes
 #elif __ANDROID__
 		private static byte[] RenderAsPng(FrameworkElement elt)
 		{
-			var elt = (FrameworkElement)MyStackPanel;
 			Android.Graphics.Bitmap b = Android.Graphics.Bitmap.CreateBitmap((int)ViewHelper.LogicalToPhysicalPixels(elt.ActualWidth), (int)ViewHelper.LogicalToPhysicalPixels(elt.ActualHeight), Android.Graphics.Bitmap.Config.Argb8888);
 			Android.Graphics.Canvas c = new Android.Graphics.Canvas(b);
 			var view = elt as Android.Views.View;
