@@ -32,7 +32,7 @@ namespace Windows.UI.Xaml.Shapes
 			get { return ViewHelper.LogicalToPhysicalPixels((double)ActualStrokeThickness); }
 		}
 
-		partial void PartialInitialize() => SetWillNotDraw(false);
+		public Shape() => SetWillNotDraw(false);
 
 		protected override void OnDraw(Canvas canvas)
 		{

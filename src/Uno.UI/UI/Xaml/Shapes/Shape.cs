@@ -19,12 +19,6 @@ namespace Windows.UI.Xaml.Shapes
 
 		private readonly SerialDisposable _brushChanged = new SerialDisposable();
 
-		public Shape()
-		{
-			PartialInitialize();
-		}
-
-		partial void PartialInitialize();
 		/// <summary>
 		/// Returns 0.0 if Stroke is <c>null</c>, otherwise, StrokeThickness
 		/// </summary>
