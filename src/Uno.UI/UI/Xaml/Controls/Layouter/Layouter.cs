@@ -181,7 +181,7 @@ namespace Windows.UI.Xaml.Controls
 					this.Log().DebugFormat("[{0}/{1}] Arrange({2}/{3}/{4}/{5})", LoggingOwnerTypeName, Name, GetType(), Panel.Name, finalRect, Panel.Margin);
 				}
 
-				var clippedArrangeSize = uiElement?.ClippedFrame is Rect clip && !uiElement.IsArrangeDirty
+				var clippedArrangeSize = uiElement?.ClippedFrame is Rect clip // && !uiElement.IsArrangeDirty
 					? clip.Size
 					: finalRect.Size;
 
