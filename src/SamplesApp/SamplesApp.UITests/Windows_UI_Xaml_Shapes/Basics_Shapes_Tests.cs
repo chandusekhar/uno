@@ -7,6 +7,7 @@ using System.Text;
 using NUnit.Framework;
 using SamplesApp.UITests.TestFramework;
 using Uno.UITest.Helpers.Queries;
+using Uno.UITests.Helpers;
 
 namespace SamplesApp.UITests.Windows_UI_Xaml_Shapes
 {
@@ -153,8 +154,8 @@ namespace SamplesApp.UITests.Windows_UI_Xaml_Shapes
 						}
 
 						using (var actual = (Bitmap)testResult)
-						{
-							var scale = 2.0;
+						{ 
+							var scale = AppInitializer.GetLocalPlatform() == Platform.Android ? 1.0 : 2.0;
 							ImageAssert.AreAlmostEqual(expected, ImageAssert.FirstQuadrant, actual, ImageAssert.FirstQuadrant, scale, tolerance.Value);
 						}
 					}
