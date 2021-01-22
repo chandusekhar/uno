@@ -24,7 +24,7 @@ namespace Windows.UI.Xaml.Shapes
 
 		protected bool HasStroke
 		{
-			get { return Stroke != null && ActualStrokeThickness > 0 }
+			get { return Stroke != null && ActualStrokeThickness > 0; }
 		}
 
 		internal double PhysicalStrokeThickness => ViewHelper.LogicalToPhysicalPixels((double)ActualStrokeThickness);
